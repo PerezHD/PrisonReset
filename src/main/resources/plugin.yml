@@ -1,0 +1,6 @@
+name: PrisonReset
+description: Plugin to strip prison ranks from users when using vault. Works with PermissionsEx.
+main: com.volcanicpvp.prisonreset.PrisonReset
+authors: [harry5573]
+version: 0.1
+depend: [PermissionsEx]
