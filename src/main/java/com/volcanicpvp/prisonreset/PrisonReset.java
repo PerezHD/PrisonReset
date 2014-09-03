@@ -51,9 +51,9 @@ public class PrisonReset extends JavaPlugin {
             }
 
             logMessage("Beginning user clean");
-            
-            final PermissionsEx perms_plugin = (PermissionsEx)Bukkit.getServer().getPluginManager().getPlugin("PermissionsEx");
-            
+
+            final PermissionsEx perms_plugin = (PermissionsEx) Bukkit.getServer().getPluginManager().getPlugin("PermissionsEx");
+
             getServer().dispatchCommand(getServer().getConsoleSender(), "whitelist on");
             getServer().getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
                   public void run() {
@@ -65,7 +65,12 @@ public class PrisonReset extends JavaPlugin {
                                           user.removeGroup(group);
                                           logMessage("[CLEANER] Removed " + group.getName() + " from user " + user.getName());
                                     }
+                              }
+
+                              if (user.getGroups().length > 0) {
                                     user.save();
+                              } else {
+                                    user.remove();
                               }
                         }
                   }
