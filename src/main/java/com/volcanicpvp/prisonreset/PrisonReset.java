@@ -16,15 +16,18 @@
  */
 package com.volcanicpvp.prisonreset;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Map.Entry;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import ru.tehkode.permissions.PermissionGroup;
-import ru.tehkode.permissions.PermissionUser;
-import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 /**
  * https://www.github.com/Harry5573OP
@@ -50,31 +53,42 @@ public class PrisonReset extends JavaPlugin {
                   donor_ranks.add(donor_rank.toLowerCase());
             }
 
-            logMessage("Beginning user clean");
+            File permissions_yml = new File("plugins/PermissionsEx/permissions.yml");
+            if (!permissions_yml.exists()) {
+                  logMessage("No permission file found.");
+                  return;
+            }
 
-            final PermissionsEx perms_plugin = (PermissionsEx) Bukkit.getServer().getPluginManager().getPlugin("PermissionsEx");
+            FileConfiguration perms_file = YamlConfiguration.loadConfiguration(permissions_yml);
 
-            getServer().dispatchCommand(getServer().getConsoleSender(), "whitelist on");
-            getServer().getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
-                  public void run() {
-                        Set<PermissionUser> users = perms_plugin.getPermissionsManager().getUsers();
+            HashMap<String, List<String>> final_users = new HashMap<>();
+            for (String user_name : perms_file.getConfigurationSection("users").getKeys(false)) {
+                  logMessage("Cleaning user " + user_name);
 
-                        for (PermissionUser user : users) {
-                              for (final PermissionGroup group : user.getGroups()) {
-                                    if (!donor_ranks.contains(group.getName().toLowerCase())) {
-                                          user.removeGroup(group);
-                                          logMessage("[CLEANER] Removed " + group.getName() + " from user " + user.getName());
-                                    }
-                              }
-
-                              if (user.getGroups().length > 0) {
-                                    user.save();
-                              } else {
-                                    user.remove();
+                  List<String> user_groups = perms_file.getStringList("users." + user_name + ".group");
+                  if (user_groups != null) {
+                        for (String group_name : new ArrayList<>(user_groups)) {
+                              if (!donor_ranks.contains(group_name.toLowerCase())) {
+                                    user_groups.remove(group_name);
                               }
                         }
                   }
-            }, 40L);
+                  if (user_groups != null && !user_groups.isEmpty()) {
+                        final_users.put(user_name, user_groups);
+                  }
+            }
+
+            perms_file.set("users", null);
+            
+            for (Entry<String, List<String>> user : final_users.entrySet()) {
+                  perms_file.set("users." + user.getKey() + ".group", user.getValue());
+            }
+
+            try {
+                  perms_file.save(permissions_yml);
+            } catch (IOException ex) {
+                  ex.printStackTrace();
+            }
 
             logMessage("==[ Plugin version " + getDescription().getVersion() + " started ]==");
       }
